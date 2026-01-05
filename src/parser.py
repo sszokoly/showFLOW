@@ -42,11 +42,13 @@ RE_FLOW = (
 
 reFLOW = re.compile("".join(RE_FLOW))
 
+
 def hex_to_dec(string: str) -> int or str:
     try:
         return int(string, 16)
     except ValueError:
         return string
+
 
 @dataclass
 class Flow:
@@ -77,28 +79,32 @@ class Flow:
                 converted = fld.metadata["conversion"](value)
                 setattr(self, fld.name, converted)
 
+    def is_rtcp(self) -> bool:
+        return self.InSrcPort % 2 == 1 and self.InDstPort % 2 == 1
 
-def parse_showflow_310(output: str) -> List[Flow]:
+
+def parse_showflow_310(output: str, no_rtcp: bool = True) -> List[Flow]:
     """
     Parses the output of the `showflow 310 dynamic` command.
 
     Args:
         output (str): The output string from the command.
+        no_rtcp (bool): If True, RTCP flows will be excluded.
 
     Returns:
         List[Flow]: A list of Flow objects containing flow information.
     """
     flows = []
     for line in output.splitlines():
-        if "rtcp_echo" in line:
-            continue
         match = reFLOW.match(line)
         if match:
-            flow_info = match.groupdict()
-            flows.append(Flow(**flow_info))
+            flow = Flow(**match.groupdict())
+            if not no_rtcp or not flow.is_rtcp():
+                flows.append(flow)
         else:
             logger.warning(f"Line did not match expected format: {line}")
     return flows
+
 
 ################################ END PARSER ###################################
 
