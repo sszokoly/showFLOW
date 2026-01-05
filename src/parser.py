@@ -15,7 +15,6 @@ from dataclasses import dataclass, field, fields
 from typing import List
 
 ################################ END IMPORTS ##################################
-
 ################################ BEGIN PARSER #################################
 
 RE_FLOW = (
