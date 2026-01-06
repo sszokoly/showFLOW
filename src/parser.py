@@ -42,11 +42,11 @@ RE_FLOW = (
 reFLOW = re.compile("".join(RE_FLOW))
 
 
-def hex_to_dec(string: str) -> int or str:
+def hex_to_dec(_str: str) -> int or str:
     try:
-        return int(string, 16)
+        return int(_str, 16)
     except ValueError:
-        return string
+        return 0
 
 
 @dataclass
@@ -95,9 +95,9 @@ def parse_showflow_310(output: str, no_rtcp: bool = True) -> List[Flow]:
     """
     flows = []
     for line in output.splitlines():
-        match = reFLOW.match(line)
-        if match:
-            flow = Flow(**match.groupdict())
+        m = reFLOW.match(line)
+        if m:
+            flow = Flow(**m.groupdict())
             if not no_rtcp or not flow.is_rtcp():
                 flows.append(flow)
         else:
