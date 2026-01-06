@@ -6,10 +6,12 @@ This module contains the SBCE object
 """
 ################################ BEGIN IMPORTS ################################
 
+import sys
+sys.path.append("/usr/local/ipcs/peon/venv/lib/")
 import os
 import re
+import netifaces as ni
 from platform import node
-from netifaces import interfaces, ifaddresses
 
 ################################ END IMPORTS ##################################
 ################################ BEGIN SBCE ###################################
@@ -71,19 +73,19 @@ class SBCE(object):
     @property
     def ifaces(self):
         """dict: Returns the IP addresses of all interface as keys
-        and interface names as values. This includes signaling, media
-        and IPv6 addresses as well.
+        and interface names as values. 
         """
         if self._ifaces is not None:
             return self._ifaces
 
-        self._ifaces = {
-            ifaddr["addr"]:iface for iface in interfaces() for ifaddrs in
-            ifaddresses(iface).values() for ifaddr in ifaddrs
+        ifaces = {
+            ifaddr["addr"]: iface 
+            for iface in ni.interfaces() 
+            for family in [ni.AF_INET, ni.AF_INET6]
+            for ifaddr in ni.ifaddresses(iface).get(family, [])
         }
-        self._ifaces.update({k: self._ifaces[self.publics[k]] for k in
-                    set(self.publics).difference(set(self.ifaces))})
-        return self._ifaces
+        self._ifaces = ifaces
+        return ifaces
 
     @property
     def sysinfo(self):
