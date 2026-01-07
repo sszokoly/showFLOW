@@ -56,7 +56,7 @@ class CommandResult:
         self.stdout = stdout
         self.stderr = stderr
         self.returncode = returncode
-        self.timestamp = None
+        self.timestamp = timestamp
         self.name = name
 
     def __repr__(self) -> str:
@@ -104,6 +104,8 @@ async def showflows(queue, sbce, level=7, sleep=2)  :
 
 
 async def analyze_flows(queue, sbce):
+    prev = set()
+    curr = set()
     while True:
         commandresult = await queue.get()
         if commandresult.stderr:
@@ -115,16 +117,22 @@ async def analyze_flows(queue, sbce):
             timestamp=commandresult.timestamp
         )
 
+        curr.clear()
         for flow in flows:
-            if flow.Rx > 0:
-                continue
             InSrcIP, InSrcPort, InDstIP, InDstPort = flow.in_leg
             InIface = sbce.ifaces.get(InDstIP, "??")
             OutSrcIP, OutSrcPort, OutDstIP, OutDstPort = flow.out_leg
             OutIface = sbce.ifaces.get(OutSrcIP, "??")
-            inside = f"{InIface} {InDstIP::>15}:{InDstPort:<5} <= {InSrcPort:>5}:{InSrcIP:<15}"
-            outside = f"{OutDstIP:>15}:{OutDstPort:<5} <= {OutSrcPort:>5}:{OutSrcIP:<15} {OutIface}"
-            print(f"{flow.timestamp}: {outside}-SBCE-{inside}")
+            if InSrcIP == "0.0.0.0" or OutDstIP == "0.0.0.0":
+                continue
+            if flow.Rx == 0:
+                inside = f"{InIface} (Rx {flow.Rx}) {InDstIP:>15}:{InDstPort:<5} <= {InSrcPort:>5}:{InSrcIP:<15}"
+                outside = f"{OutDstIP:>15}:{OutDstPort:<5} <= {OutSrcPort:>5}:{OutSrcIP:<15} (Rly {flow.Rly}) {OutIface}"
+                zerorx_flow = f"{outside}-SBCE-{inside}"
+                curr.add(zerorx_flow)
+                if zerorx_flow in prev:
+                    print(f"{flow.timestamp:%Y-%m-%d@%H:%M:%S}   {zerorx_flow}")
+        prev = set(curr)
 
 
 async def main():

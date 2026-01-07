@@ -70,7 +70,7 @@ class Flow:
     Drp: int
     Rx: int
     Rly: int
-    Ech: str
+    Ech: int
     timestamp: datetime
 
     @classmethod
@@ -95,7 +95,7 @@ class Flow:
             Drp=hex_to_dec(match_dict['Drp']),
             Rx=hex_to_dec(match_dict['Rx']),
             Rly=hex_to_dec(match_dict['Rly']),
-            Ech=match_dict['Ech'],
+            Ech=hex_to_dec(match_dict['Ech']),
             timestamp=timestamp
         )
 
@@ -104,7 +104,7 @@ class Flow:
 
     @property
     def in_leg(self):
-        return self.InSrcIP, self.InSrcPort, self.InDstPort, self.InDstIP
+        return self.InSrcIP, self.InSrcPort, self.InDstIP, self.InDstPort
 
     @property
     def out_leg(self):
