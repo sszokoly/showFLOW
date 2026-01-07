@@ -107,7 +107,7 @@ class SBCE(object):
         sql = "SELECT media_name, interface, ip_address, public_ip\
                  FROM sip_media_interface_view"
         json_res = self._exec_sql(sql)
-        
+
         if json_res:
             try:
                 media_data = json.loads(json_res)
@@ -121,7 +121,7 @@ class SBCE(object):
                     for entry in media_data
                 ]
                 self._media_ifaces = media_ifaces
-                return media_ifaces 
+                return media_ifaces
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse JSON result: {json_res} - {e}")
                 self._media_ifaces = []

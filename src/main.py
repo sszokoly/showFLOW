@@ -122,8 +122,8 @@ async def analyze_flows(queue, sbce):
             InIface = sbce.ifaces.get(InDstIP, "??")
             OutSrcIP, OutSrcPort, OutDstIP, OutDstPort = flow.out_leg
             OutIface = sbce.ifaces.get(OutSrcIP, "??")
-            inside = f"{InIface} {InDstIP}:{InDstPort} <= {InSrcPort}:{InSrcIP}"
-            outside = f"{OutDstIP}:{OutDstPort} <= {OutSrcPort}:{OutSrcIP} {OutIface}"
+            inside = f"{InIface} {InDstIP::>15}:{InDstPort:<5} <= {InSrcPort:>5}:{InSrcIP:<15}"
+            outside = f"{OutDstIP:>15}:{OutDstPort:<5} <= {OutSrcPort:>5}:{OutSrcIP:<15} {OutIface}"
             print(f"{flow.timestamp}: {outside}-SBCE-{inside}")
 
 

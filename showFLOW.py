@@ -230,7 +230,7 @@ class SBCE(object):
         sql = "SELECT media_name, interface, ip_address, public_ip\
                  FROM sip_media_interface_view"
         json_res = self._exec_sql(sql)
-        
+
         if json_res:
             try:
                 media_data = json.loads(json_res)
@@ -244,7 +244,7 @@ class SBCE(object):
                     for entry in media_data
                 ]
                 self._media_ifaces = media_ifaces
-                return media_ifaces 
+                return media_ifaces
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse JSON result: {json_res} - {e}")
                 self._media_ifaces = []
@@ -420,8 +420,8 @@ async def analyze_flows(queue, sbce):
             InIface = sbce.ifaces.get(InDstIP, "??")
             OutSrcIP, OutSrcPort, OutDstIP, OutDstPort = flow.out_leg
             OutIface = sbce.ifaces.get(OutSrcIP, "??")
-            inside = f"{InIface} {InDstIP}:{InDstPort} <= {InSrcPort}:{InSrcIP}"
-            outside = f"{OutDstIP}:{OutDstPort} <= {OutSrcPort}:{OutSrcIP} {OutIface}"
+            inside = f"{InIface} {InDstIP::>15}:{InDstPort:<5} <= {InSrcPort:>5}:{InSrcIP:<15}"
+            outside = f"{OutDstIP:>15}:{OutDstPort:<5} <= {OutSrcPort:>5}:{OutSrcIP:<15} {OutIface}"
             print(f"{flow.timestamp}: {outside}-SBCE-{inside}")
 
 
