@@ -422,7 +422,7 @@ async def analyze_flows(queue, sbce):
             OutIface = sbce.ifaces.get(OutSrcIP, "??")
             inside = f"{InIface} {InDstIP}:{InDstPort} <= {InSrcPort}:{InSrcIP}"
             outside = f"{OutDstIP}:{OutDstPort} <= {OutSrcPort}:{OutSrcIP} {OutIface}"
-            print(f"{outside}-SBCE-{inside}")
+            print(f"{flow.timestamp}: {outside}-SBCE-{inside}")
 
 
 async def main():
