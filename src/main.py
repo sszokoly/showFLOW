@@ -119,9 +119,9 @@ async def analyze_flows(queue, sbce):
             if flow.Rx > 0:
                 continue
             InSrcIP, InSrcPort, InDstIP, InDstPort = flow.in_leg
-            InIface= sbce.ifaces.get(InDstIP, "??")
+            InIface = sbce.ifaces.get(InDstIP, "??")
             OutSrcIP, OutSrcPort, OutDstIP, OutDstPort = flow.out_leg
-            OutIface= sbce.ifaces.get(OutSrcIP, "??")
+            OutIface = sbce.ifaces.get(OutSrcIP, "??")
             inside = f"{InIface} {InDstIP}:{InDstPort} <= {InSrcPort}:{InSrcIP}"
             outside = f"{OutDstIP}:{OutDstPort} <= {OutSrcPort}:{OutSrcIP} {OutIface}"
             print(f"{outside}-SBCE-{inside}")
