@@ -38,19 +38,19 @@ def print_data(result: TryData):
         f_time = round(result.get_midle_sum() * 1000, 2)
         print(f'{result.addr:<15}    {name:<50}   {f_time} ms')
 
-def make_socket_udp(num):
+def make_socket_udp(ttl, source_ip='0.0.0.0', source_port=0):
     proto_u = socket.getprotobyname('udp')
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, proto_u)
-    udp_socket.setsockopt(socket.SOL_IP, socket.IP_TTL, num)
+    udp_socket.setsockopt(socket.SOL_IP, socket.IP_TTL, ttl)
+    udp_socket.bind((source_ip, source_port))
     return udp_socket
 
-def make_socket_icmp(num, base_port):
-    icmp_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW,
-                                socket.getprotobyname("icmp"))
-    icmp_socket.setsockopt(socket.IPPROTO_IP, socket.IP_TTL,
-                           struct.pack('I', num))
+def make_socket_icmp(ttl, base_port):
+    proto_i = socket.getprotobyname('icmp')
+    icmp_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, proto_i)
+    icmp_socket.setsockopt(socket.IPPROTO_IP, socket.IP_TTL, struct.pack('I', ttl))
     icmp_socket.settimeout(MAX_TIME)
-    icmp_socket.bind(('', base_port + num))
+    icmp_socket.bind(('', base_port + ttl))
     return icmp_socket
 
 def get_route(addr: str, hop: int, base_port: int) -> list:
@@ -99,4 +99,30 @@ def get_route(addr: str, hop: int, base_port: int) -> list:
     return res_data
 
 if __name__ == "__main__":
-    get_route("192.168.200.163", 8, 2048)
+    import argparse
+    import sys
+    #sys.argv.extend(['8.8.8.8'])
+    parser = argparse.ArgumentParser(description='UDP traceroute')
+    parser.add_argument('-f', '--first', dest='first_ttl',
+                        default=1,
+                        help='Start from the first_ttl hop (instead from 1)')
+    parser.add_argument('-s', '--source', dest='src_addr',
+                        default='0.0.0.0',
+                        help='Use source src_addr for outgoing packets')
+    parser.add_argument('-m', '--max-hops', dest='max_ttl',
+                        default=30,
+                        help='Set the max number of hops (max TTL to bereached). Default 30')
+    parser.add_argument('-p', '--port', dest='port',
+                        default=53,
+                        help='Set the destination port to use, Default 53')
+    parser.add_argument('-q', '--queries', dest='nqueries',
+                        default=3,
+                        help='Set the number of probes per each hop. Default 3')
+    parser.add_argument('-o', '--oport', dest='oport',
+                        default=2048,
+                        help='Set the origination (source) port, Default 2048')
+    args = parser.parse_args()
+    print(args)
+    #host = args[0]
+
+    #get_route(host, 8, 2048)
