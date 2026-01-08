@@ -99,4 +99,4 @@ def get_route(addr: str, hop: int, base_port: int) -> list:
     return res_data
 
 if __name__ == "__main__":
-    get_route("8.8.8.8", 8, 2048)
+    get_route("192.168.200.163", 8, 2048)
