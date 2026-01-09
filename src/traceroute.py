@@ -1,4 +1,7 @@
 
+#!/usr/local/ipcs/peon/venv/bin/python3
+# -*- encoding: utf-8 -*-
+
 import time
 import select
 import socket
@@ -72,11 +75,12 @@ def print_data(result: TryData, dont_resolve: bool = False):
     print(f'{result.host:<15}    {name:<50}   {f_time} ms')
 
 def make_socket_udp(ttl, device=None, src_addr='0.0.0.0', sport=0):
-    devices = [x for x in get_interface_names() if x != 'lo']
-    if not devices:
-        raise OSError("No network devices found (excluding loopback)")
-    else:
-        device = devices[0]
+    if device is None:
+        devices = [x for x in get_interface_names() if x != 'lo']
+        if not devices:
+            raise OSError("No network devices found (excluding loopback)")
+        else:
+            device = devices[0]
     proto_u = socket.getprotobyname('udp')
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, proto_u)
     udp_socket.setsockopt(socket.SOL_IP, socket.IP_TTL, ttl)
@@ -168,7 +172,7 @@ def get_route(host: str,
 if __name__ == "__main__":
     import argparse
     import sys
-    sys.argv.extend(['--sport', '2048', '-q', '1', '-m', '1', '8.8.8.8'])
+    #sys.argv.extend(['--sport', '2048', '-q', '1', '-m', '2', '-i', 'B1', '-p', '2057', '-f', '2', '8.8.8.8'])
     parser = argparse.ArgumentParser(description='UDP traceroute')
     parser.add_argument('-f', '--first', dest='first_ttl', type=int,
                         default=1, 
