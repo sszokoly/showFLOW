@@ -9,7 +9,7 @@ import array
 try:
     import netifaces
     get_interface_names = netifaces.interfaces
-except ImportError:
+except ModuleNotFoundError:
     def get_interface_names():
         max_interfaces = 128
         bytes_size = max_interfaces * 40  # Increased size for 64-bit
@@ -33,7 +33,7 @@ except ImportError:
                 interfaces.append(name)
             i += 40  # Size of ifreq structure on 64-bit systems
 
-        return [x for x in set(interfaces) if x and x != 'lo']
+        return [x for x in set(interfaces) if x]
 
 
 DEFAULT_COUNT_BYTE = 1024
@@ -72,7 +72,7 @@ def print_data(result: TryData, dont_resolve: bool = False):
     print(f'{result.host:<15}    {name:<50}   {f_time} ms')
 
 def make_socket_udp(ttl, device=None, src_addr='0.0.0.0', sport=0):
-    devices = get_interface_names()
+    devices = [x for x in get_interface_names() if x != 'lo']
     if not devices:
         raise OSError("No network devices found (excluding loopback)")
     else:
@@ -105,7 +105,7 @@ def make_socket_icmp(ttl, port, device=None, src_addr='0.0.0.0', sport=0, max_wa
 
 def get_route(host: str,
         max_ttl: int = 30,
-        port: int = 53,
+        port: int = 33434,
         dont_resolve: bool = False,
         first_ttl: int = 1,
         device = None,
@@ -113,7 +113,8 @@ def get_route(host: str,
         sport: int = 0,
         nqueries: int = 3,
         udp: bool = False,
-        max_wait: int = 2
+        max_wait: int = 2,
+        packetlen: int = 40
     ) -> list:
     res_data = []
     complete = False
@@ -124,12 +125,13 @@ def get_route(host: str,
                 break
             cur = None
             result = TryData()
-            print(f'{str(ttl)+")":<6}', end='')
+            print(f' {str(ttl):<6}', end='')
 
             for num_of_try in range(nqueries):
                 with make_socket_udp(ttl, device=device, src_addr=src_addr, sport=sport) as udp_socket,\
                         make_socket_icmp(ttl, port, device=device, src_addr=src_addr, sport=sport) as icmp_socket:
-                    udp_socket.sendto(''.encode(), (host, port + ttl))
+                    payload = 'a' * packetlen
+                    udp_socket.sendto(payload.encode(), (host, port + ttl))
                     send_time = time.time()
                     try:
                         in_select_socket = select.select([icmp_socket], [], [],
@@ -166,7 +168,7 @@ def get_route(host: str,
 if __name__ == "__main__":
     import argparse
     import sys
-    sys.argv.extend(['192.168.1.254', '-i', 'eth0', '--sport', '2000'])
+    sys.argv.extend(['--sport', '2048', '-q', '1', '-m', '1', '8.8.8.8'])
     parser = argparse.ArgumentParser(description='UDP traceroute')
     parser.add_argument('-f', '--first', dest='first_ttl', type=int,
                         default=1, 
@@ -184,8 +186,8 @@ if __name__ == "__main__":
                         default=False,
                         help='Do not resolve IP hostesses to their domain names')
     parser.add_argument('-p', '--port', dest='port', type=int,
-                        default=53,
-                        help='Set the destination port to use, Default 53')
+                        default=33434,
+                        help='Set the destination port to use, Default 33434')
     parser.add_argument('-w', '--wait', dest='max_wait', type=int,
                         default=2,
                         help='Wait for a probe no more than this seconds. Default 2')
@@ -201,6 +203,9 @@ if __name__ == "__main__":
     parser.add_argument('-U', '--udp', dest='udp', action='store_true',
                         default=False,
                         help='Use UDP to particular port for tracerouting')
+    parser.add_argument('--packetlen', dest='packetlen', type=int,
+                        default=40,
+                        help='The full packet length')
     parser.add_argument('host', help='Host hostess')
     args = parser.parse_args()
     get_route(args.host,
@@ -213,6 +218,6 @@ if __name__ == "__main__":
         sport=args.sport,
         nqueries=args.nqueries,
         udp=args.udp,
-        max_wait=args.max_wait
-        
+        max_wait=args.max_wait,
+        packetlen=args.packetlen
     )
