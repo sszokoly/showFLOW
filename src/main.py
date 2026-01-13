@@ -25,7 +25,7 @@ from typing import Any, List, Dict, Optional
 ################################ END IMPORTS ##################################
 
 from sbce import SBCE
-from flow_parser import parse_showflow_310
+from flow import parse_showflow_310
 
 ################################ BEGIN MODULES ################################
 
