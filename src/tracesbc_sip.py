@@ -237,3 +237,194 @@ class TracesbcSIPReader(object):
             return bz2.BZ2File(filename)
         else:
             return open(filename)
+
+
+import asyncio
+from pathlib import Path
+from datetime import datetime, timedelta
+import time
+
+class TraceFileReader:
+    """
+    Async reader for rotating trace files with epoch timestamps.
+    Automatically switches to newer files as they're created.
+    """
+    
+    def __init__(self, directory, pattern='trace_*.dat', check_interval=0.1, 
+                 lookback_seconds=300):
+        """
+        Args:
+            directory: Directory containing trace files
+            pattern: Glob pattern (e.g., 'trace_*.dat' or 'trace_*')
+            check_interval: How often to check for new files (seconds)
+            lookback_seconds: Only consider files from last N seconds
+        """
+        self.directory = Path(directory)
+        self.pattern = pattern
+        self.check_interval = check_interval
+        self.lookback_seconds = lookback_seconds
+        
+        self.current_file = None
+        self.current_handle = None
+        self.current_position = 0
+    
+    def _extract_epoch_from_filename(self, filepath):
+        """
+        Extract epoch timestamp from filename.
+        Assumes format like: trace_1705234567.dat or trace_1705234567_something.dat
+        """
+        try:
+            # Get the filename without extension
+            name = filepath.stem  # e.g., 'trace_1705234567' or 'trace_1705234567_extra'
+            
+            # Split by underscore and find the epoch part
+            parts = name.split('_')
+            for part in parts:
+                if part.isdigit() and len(part) >= 10:  # Epoch is 10+ digits
+                    return int(part)
+            return 0
+        except (ValueError, AttributeError):
+            return 0
+    
+    def _get_recent_files(self):
+        """Get trace files from the last N seconds."""
+        cutoff_time = time.time() - self.lookback_seconds
+        recent_files = []
+        
+        for filepath in self.directory.glob(self.pattern):
+            epoch = self._extract_epoch_from_filename(filepath)
+            if epoch >= cutoff_time:
+                recent_files.append((epoch, filepath))
+        
+        # Sort by epoch timestamp
+        recent_files.sort(key=lambda x: x[0])
+        return [f[1] for f in recent_files]
+    
+    def _get_latest_file(self):
+        """Get the most recent trace file."""
+        recent = self._get_recent_files()
+        return recent[-1] if recent else None
+    
+    async def _close_current_file(self):
+        """Close the currently open file."""
+        if self.current_handle:
+            self.current_handle.close()
+            self.current_handle = None
+            self.current_position = 0
+            print(f"Closed: {self.current_file.name if self.current_file else 'unknown'}")
+    
+    async def _open_new_file(self, filepath):
+        """Open a new trace file."""
+        await self._close_current_file()
+        
+        self.current_file = filepath
+        self.current_handle = open(filepath, 'rb')
+        self.current_position = 0
+        
+        print(f"Opened: {filepath.name}")
+    
+    async def _read_chunk(self, chunk_size=8192):
+        """Read a chunk from current file."""
+        if not self.current_handle:
+            return None
+        
+        data = self.current_handle.read(chunk_size)
+        if data:
+            self.current_position += len(data)
+        
+        return data
+    
+    async def read_continuously(self, callback, chunk_size=8192):
+        """
+        Read trace files continuously, switching to newer files automatically.
+        
+        Args:
+            callback: Async function to call with each chunk of data
+            chunk_size: Bytes to read per iteration
+        """
+        try:
+            while True:
+                # Check for newer file
+                latest_file = self._get_latest_file()
+                
+                if latest_file is None:
+                    # No files available yet, wait
+                    await asyncio.sleep(self.check_interval)
+                    continue
+                
+                # Switch to newer file if available
+                if self.current_file != latest_file:
+                    await self._open_new_file(latest_file)
+                
+                # Read chunk from current file
+                data = await self._read_chunk(chunk_size)
+                
+                if data:
+                    # Process the data
+                    await callback(data, self.current_file)
+                else:
+                    # No more data, wait before retrying
+                    await asyncio.sleep(self.check_interval)
+        
+        finally:
+            await self._close_current_file()
+    
+    async def read_lines_continuously(self, callback, buffer_size=8192):
+        """
+        Read trace files line by line, switching to newer files automatically.
+        
+        Args:
+            callback: Async function to call with each line
+            buffer_size: Read buffer size
+        """
+        line_buffer = b''
+        
+        async def process_chunk(data, filepath):
+            nonlocal line_buffer
+            
+            line_buffer += data
+            
+            # Process complete lines
+            while b'\n' in line_buffer:
+                line, line_buffer = line_buffer.split(b'\n', 1)
+                await callback(line, filepath)
+        
+        await self.read_continuously(process_chunk, chunk_size=buffer_size)
+
+
+# Example usage functions
+
+async def process_chunk(data, filepath):
+    """Process a chunk of binary data."""
+    print(f"Read {len(data)} bytes from {filepath.name}")
+    # Process your trace data here
+    # e.g., parse binary protocol, extract events, etc.
+
+
+async def process_line(line, filepath):
+    """Process a single line."""
+    try:
+        decoded = line.decode('utf-8')
+        print(f"[{filepath.name}] {decoded[:100]}")  # Print first 100 chars
+    except UnicodeDecodeError:
+        print(f"[{filepath.name}] Binary data: {len(line)} bytes")
+
+
+# Main example
+async def main():
+    reader = TraceFileReader(
+        directory='/archive/log/tracesbc/tracesbc_sip',
+        pattern='tracesbc_sip_[1-9][0-9][0-9]*[!_][!_]',
+        check_interval=0.1,  # Check for new files every 100ms
+        lookback_seconds=300  # Only consider files from last 5 minutes
+    )
+    
+    # Read as chunks
+    await reader.read_continuously(process_chunk, chunk_size=8192)
+    
+    # OR read line by line
+    # await reader.read_lines_continuously(process_line)
+
+
+if __name__ == '__main__':
+    asyncio.run(main())
