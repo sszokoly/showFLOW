@@ -74,11 +74,11 @@ class AvayaSubtype5Packet:
         """Parse RTCP data into AvayaSubtype5Packet."""
         try:
             # Check if this is subtype 5
-            if rtcp_data.get('rtcp.app.subtype') != '5':
+            if rtcp_data.get('rtcp_rtcp_app_subtype') != '5':
                 return None
             
             # Get the app data (hex string with colons)
-            app_data_hex = rtcp_data.get('rtcp.app.data', '')
+            app_data_hex = rtcp_data.get('rtcp_rtcp_app_data', '')
             if not app_data_hex:
                 return None
             
@@ -134,13 +134,13 @@ class AvayaSubtype5Packet:
             rtt_last_hop = int.from_bytes(data_bytes[rtt_start:rtt_end], byteorder='big')
             
             return cls(
-                version=rtcp_data.get('rtcp.version', ''),
-                padding=rtcp_data.get('rtcp.padding', ''),
-                subtype=rtcp_data.get('rtcp.app.subtype', ''),
-                packet_type=rtcp_data.get('rtcp.pt', ''),
-                length=rtcp_data.get('rtcp.length', ''),
-                ssrc=rtcp_data.get('rtcp.ssrc.identifier', ''),
-                name=rtcp_data.get('rtcp.app.name', ''),
+                version=rtcp_data.get('rtcp_rtcp_version', ''),
+                padding=rtcp_data.get('rtcp_rtcp_padding', ''),
+                subtype=rtcp_data.get('rtcp_rtcp_app_subtype', ''),
+                packet_type=rtcp_data.get('rtcp_rtcp_pt', ''),
+                length=rtcp_data.get('rtcp_rtcp_length', ''),
+                ssrc=rtcp_data.get('rtcp_rtcp_ssrc_identifier', ''),
+                name=rtcp_data.get('rtcp_rtcp_app_name', ''),
                 incoming_rtp_ssrc=incoming_rtp_ssrc,
                 metric_mask=metric_mask,
                 comm_controller_ip=comm_controller_ip,
@@ -180,27 +180,27 @@ Avaya Subtype 5 RTCP Packet:
 """
 
 if __name__ == "__main__":
-    rtcp_data = {
-          "rtcp.version": "2",
-          "rtcp.padding": "0",
-          "rtcp.app.subtype": "5",
-          "rtcp.pt": "204",
-          "rtcp.length": "8",
-          "rtcp.ssrc.identifier": "0x83731900",
-          "rtcp.app.name": "-AV-",
-          "rtcp.app.data": "5b:d3:c0:09:9e:00:00:00:0a:0a:30:eb:08:00:08:04:0a:0a:30:fe:ff:ff:ff:00",
-          "rtcp.length_check": "1"
+    rtcp5_data1 = {
+        "rtcp_rtcp_version": "2",
+        "rtcp_rtcp_padding": "0",
+        "rtcp_rtcp_app_subtype": "5",
+        "rtcp_rtcp_pt": "204",
+        "rtcp_rtcp_length": "9",
+        "rtcp_rtcp_ssrc_identifier": "0x48bdb6ca",
+        "rtcp_rtcp_app_name": "-AV-",
+        "rtcp_rtcp_app_data": "48:bd:b6:ca:78:00:00:00:02:0a:0e:32:14:00:01:0a:0e:0f:32:00:05:88:fc:55:26:00:00:00",
+        "rtcp_rtcp_length_check": "1"
+      }
+    rtcp5_data1 = {
+          "rtcp_rtcp_version": "2",
+          "rtcp_rtcp_padding": "0",
+          "rtcp_rtcp_app_subtype": "5",
+          "rtcp_rtcp_pt": "204",
+          "rtcp_rtcp_length": "10",
+          "rtcp_rtcp_ssrc_identifier": "0x83731900",
+          "rtcp_rtcp_app_name": "-AV-",
+          "rtcp_rtcp_app_data": "5b:d3:c0:09:fe:00:00:00:0a:0a:30:eb:01:0a:0a:30:3a:00:02:08:00:08:04:0a:0a:30:fe:ff:ff:ff:00:00",
+          "rtcp_rtcp_length_check": "1"
         }
-    rtcp_data2 = {
-          "rtcp.version": "2",
-          "rtcp.padding": "0",
-          "rtcp.app.subtype": "5",
-          "rtcp.pt": "204",
-          "rtcp.length": "10",
-          "rtcp.ssrc.identifier": "0x83731900",
-          "rtcp.app.name": "-AV-",
-          "rtcp.app.data": "5b:d3:c0:09:fe:00:00:00:0a:0a:30:eb:01:0a:0a:30:3a:00:02:08:00:08:04:0a:0a:30:fe:ff:ff:ff:00:00",
-          "rtcp.length_check": "1"
-        }
-    avaya_packet = AvayaSubtype5Packet.parse(rtcp_data)
+    avaya_packet = AvayaSubtype5Packet.parse(rtcp5_data1)
     print(avaya_packet)
