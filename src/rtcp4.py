@@ -19,7 +19,7 @@ Avaya Sub-type 4 RTCP packet layout
 | IPv4 of remote (2nd 2 bytes)   |  IPv4 RTCP port of remote     |
 |RTP payload type|   Frame Size  | Time to Live  | Received DSCP |
 |Media Encryption|Silence Suppres|Incoming Stream RTP source port|
-| Incoming Stream RTP dest port  | Null Terminate|Null Terminaten|
+| Incoming Stream RTP dest port  | Null Terminate| Null Terminate|
 +----------------+---------------+---------------+---------------+
 """
 import asyncio

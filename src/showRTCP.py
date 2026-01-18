@@ -6,6 +6,7 @@
 import asyncio
 import json
 import sys
+from datetime import datetime
 from typing import Callable
 
 ################################ END IMPORTS ##################################
@@ -100,10 +101,23 @@ class RTCPMonitor:
             await self.process.wait()
 
 
-def handle_packet(data):
+def handle_packet(data, rtcp_pt=204, subtype=5):
     """Example packet handler."""
-    report = json.dumps(data, indent=2)
-
+    for item in data.get('layers', {}).get('rtcp', {}):
+        if item.get('rtcp_rtcp_pt') == str(rtcp_pt) and item.get('rtcp_rtcp_app_subtype') == str(subtype):
+            timestamp = datetime.fromtimestamp(int(data.get('timestamp')[:-3]))
+            ip_src = data.get('layers', {}).get('ip', {}).get('ip_ip_src')
+            ip_dst = data.get('layers', {}).get('ip', {}).get('ip_ip_dst')
+            rtcp_length = item.get('rtcp_rtcp_length')
+            rtcp_ssrc_identifier = item.get('rtcp_rtcp_ssrc_identifier')
+            rtcp_app_data = item.get('rtcp_rtcp_app_data')
+            output  = f'"timestamp": "{timestamp}", '
+            output += f'"ip_src": "{ip_src}", "ip_dst": "{ip_dst}", '
+            output += f'"rtcp_pt": "{rtcp_pt}", "rtcp_app_subtype": "{subtype}", '
+            output += f'"rtcp_length": "{rtcp_length}", '
+            output += f'"rtcp_ssrc_identifier": "{rtcp_ssrc_identifier}", '
+            output += f'"rtcp_app_data": "{rtcp_app_data}"'
+            print("{" + output + "}")
 
 async def main():
     monitor = RTCPMonitor(
